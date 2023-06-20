@@ -12,12 +12,12 @@ class GameData :
 
     def add_circle(self):
         tries = 0
-        circle_x = random.randint(Circle.radius, self.field.size - Circle.radius)
-        circle_y = random.randint(Circle.radius, self.field.size - Circle.radius)
-        while(tries <3 and not self.check_overlap(circle_x, circle_y, Circle.radius)):
+        circle_x = random.randint((Circle.standard_radius+5), self.field.size - (Circle.standard_radius+5))
+        circle_y = random.randint((Circle.standard_radius+5), self.field.size - (Circle.standard_radius+5))
+        while(tries <3 and not self.check_overlap(circle_x, circle_y, (Circle.standard_radius+5))):
             tries +=1
-            circle_x = random.randint(Circle.radius, self.field.size - Circle.radius)
-            circle_y = random.randint(Circle.radius, self.field.size - Circle.radius)
+            circle_x = random.randint((Circle.standard_radius+5), self.field.size - (Circle.standard_radius+5))
+            circle_y = random.randint((Circle.standard_radius+5), self.field.size - (Circle.standard_radius+5))
         self.circles.append(Circle(circle_x, circle_y, (0, 1, 0)))
 
     def check_overlap(self,x, y, radius):

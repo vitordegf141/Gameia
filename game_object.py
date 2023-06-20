@@ -41,25 +41,15 @@ class GameObject:
         pass
 
 
-class Triangle(GameObject):
-    def __init__(self, x, y, size, color):
-        super().__init__(x, y, color)
-        self.size = size
 
-    def draw(self):
-        glColor3f(*self.color)
-        glBegin(GL_TRIANGLES)
-        glVertex2f(self.x, self.y + self.size / 2)
-        glVertex2f(self.x - self.size / 2, self.y - self.size / 2)
-        glVertex2f(self.x + self.size / 2, self.y - self.size / 2)
-        glEnd()
 
 
 class Circle(GameObject):
-    radius = 20  # Class variable
+    standard_radius = 20  # Class variable
 
     def __init__(self, x, y, color):
         super().__init__(x, y, color)
+        self.radius = random.randint(1, 5)
 
     def draw(self):
         glColor3f(*self.color)
@@ -67,16 +57,47 @@ class Circle(GameObject):
         glVertex2f(self.x, self.y)
         for i in range(61):
             angle = 2 * math.pi * i / 60
-            x = self.x + Circle.radius * math.cos(angle)
-            y = self.y + Circle.radius * math.sin(angle)
+            x = self.x + (Circle.standard_radius + self.radius) * math.cos(angle)
+            y = self.y + (Circle.standard_radius + self.radius) * math.sin(angle)
             glVertex2f(x, y)
         glEnd()
 
+class Triangle(GameObject):
+    multiply_score=20
+    hungry_limit = 600
+    def __init__(self, x, y, size, color):
+        super().__init__(x, y, color)
+        self.size = size
+        self.points =0
+        self.freeze = 0
+        self.hungry = Triangle.hungry_limit + 3600
+        self.die = False
+
+    def draw(self):
+        size = self.size + self.points
+        glColor3f(*self.color)
+        glBegin(GL_TRIANGLES)
+        glVertex2f(self.x, self.y + size / 2)
+        glVertex2f(self.x - size / 2, self.y - size / 2)
+        glVertex2f(self.x + size / 2, self.y - size / 2)
+        glEnd()
+    
+    def eat_circle(self,circle : Circle):
+        self.points += circle.radius
+        self.hungry_limit +=circle.radius*Triangle.hungry_limit
+        if self.points > Triangle.multiply_score:
+            print("PARIU")
+            self.freeze = 180
+            self.points =0
+            self.hungry_limit = self.hungry_limit//2
+            return True
+        return False
 
 class Square(GameObject):
     def __init__(self, x, y, size, color,image_path=None):
         super().__init__(x, y, color,image_path)
         self.size = size
+
     def draw(self):
         if self.texture_id:
             white = (1,1,1)

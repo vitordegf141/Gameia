@@ -29,7 +29,6 @@ square_x = 400
 square_y = 300
 
 # Circle position variables
-circles = []
 num_circles = 5
 
 # Triangle position variables
@@ -67,24 +66,9 @@ def create_random_circle():
     current_time = pygame.time.get_ticks()
     if current_time >= next_circle_time:
         gamedata.add_circle()
-        next_circle_time = current_time + random.randint(2000, 10000)  # Random time between 2s and 10s
+        next_circle_time = current_time + random.randint(2000//len(gamedata.triangles), 10000//len(gamedata.triangles))  # Random time between 2s and 10s
 
 
-
-def check_overlap(x, y, radius):
-    global square_x, square_y,square_size
-    for circle in circles:
-        distance = math.sqrt((circle.x - x) ** 2 + (circle.y - y) ** 2)
-        if distance < circle.radius + radius:
-            return True
-    if (
-        square_x < x + radius and
-        square_x + square_size > x - radius and
-        square_y < y + radius and
-        square_y + square_size > y - radius
-    ):
-        return True
-    return False
 
 def draw_square():    
     gamedata.square.draw()
@@ -122,12 +106,21 @@ def render_texts(texts : list):
 def get_timer_text(elapsed_time):
     return f"Time: {elapsed_time} seconds"
 
+def get_game_score():
+    text=""
+    for triangle in gamedata.triangles:
+        text+="#"+str(triangle.points)
+    text+= "n of circles:"+str(len(gamedata.circles))
+    return text
+
 def check_collision():
     global game_over,gamedata
-    for circle in gamedata.circles:
-        for triangle in gamedata.triangles:
+    for triangle in gamedata.triangles:
+        for circle in gamedata.circles:
             distance = math.sqrt((circle.x - triangle.x) ** 2 + (circle.y - triangle.y) ** 2)
             if distance < circle.radius + triangle.size / 2:
+                if triangle.eat_circle(circle) :
+                    gamedata.triangles.append((Triangle(triangle.x, triangle.y, triangle_size-10, (random.random(), random.random(), random.random()))))
                 gamedata.circles.remove(circle)
 
 def move_triangle():
@@ -135,7 +128,14 @@ def move_triangle():
     if game_over:
         return
     for triangle in gamedata.triangles:
-        closest_circle = find_closest_circle()
+        if triangle.freeze >0:
+            triangle.freeze -=1
+            continue
+        if(len(gamedata.triangles)>1):
+            triangle.hungry -=1
+            if(triangle.hungry <=0):
+                triangle.die = True
+        closest_circle = find_closest_circle(triangle)
         if closest_circle:
             dx = closest_circle.x - triangle.x
             dy = closest_circle.y - triangle.y
@@ -144,9 +144,9 @@ def move_triangle():
             triangle.x += speed * math.cos(angle)
             triangle.y += speed * math.sin(angle)
 
-def find_closest_circle():
+def find_closest_circle(triangle :Triangle):
     if gamedata.circles:
-        closest_circle = min(gamedata.circles, key=lambda c: math.sqrt((c.x - triangle_x) ** 2 + (c.y - triangle_y) ** 2))
+        closest_circle = min(gamedata.circles, key=lambda c: math.sqrt((c.x - triangle.x) ** 2 + (c.y - triangle.y) ** 2))
         return closest_circle
     return None
 
@@ -194,9 +194,9 @@ def handle_key_events():
 
 def handle_click(mouse_x, mouse_y):
     # Check if the mouse position is within a certain object's boundaries
-    print(f"square_x = ({square_x},{square_x + square_size} , square_y = ({square_y},{square_y + square_size}) ")
+    print(f"square_x = ({gamedata.square.x},{gamedata.square.x + gamedata.square.width}) , square_y = ({gamedata.square.y},{gamedata.square.y + gamedata.square.height}) ")
     print(f"mouse = ({mouse_x},{mouse_y})")
-    if square_x < mouse_x < square_x + square_size and square_y < mouse_y < square_y + square_size:
+    if gamedata.square.x < mouse_x < gamedata.square.x + gamedata.square.width and gamedata.square.y < mouse_y < gamedata.square.y + gamedata.square.height:
         # Perform actions for the square on-click
         print("Square clicked!")
 
@@ -210,6 +210,7 @@ def game_loop():
     font = pygame.font.Font('freesansbold.ttf', text_size)
     while True:
         texts=[]
+        gamedata.triangles = list(filter(lambda t: t.die ==False,gamedata.triangles))
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         handle_key_events()
 
@@ -217,7 +218,7 @@ def game_loop():
             check_collision()
             move_triangle()
             create_random_circle()
-
+        
         glLoadIdentity()
         glTranslatef(-gamedata.square.x +(window_width//2), -gamedata.square.y +(window_height//2), 0)
         draw_circles()
@@ -229,6 +230,7 @@ def game_loop():
         
         texts.append(get_timer_text(elapsed_time))
         texts.append(text_read)
+        texts.append(get_game_score())
         render_texts(texts)
         pygame.display.flip()
         
